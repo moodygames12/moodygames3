@@ -93,6 +93,42 @@
       width: 80%;
     }
 
+    #calcModal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      color: white;
+      text-align: center;
+      padding-top: 100px;
+    }
+
+    .calculator {
+      background-color: #222;
+      padding: 20px;
+      border-radius: 15px;
+      display: inline-block;
+    }
+
+    .calculator button {
+      font-size: 18px;
+      padding: 15px;
+      margin: 5px;
+      width: 80px;
+    }
+
+    #calcInput {
+      padding: 10px;
+      width: 100%;
+      margin: 10px 0;
+      font-size: 20px;
+      border-radius: 8px;
+    }
+
     .ticker-container {
       width: 100%;
       overflow: hidden;
@@ -132,17 +168,6 @@
       display: inline-block;
       padding: 0 2rem;
     }
-
-    #gameTimer {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      font-size: 18px;
-      color: white;
-      background-color: #333;
-      padding: 10px 20px;
-      border-radius: 8px;
-    }
   </style>
 </head>
 <body id="mainBody">
@@ -159,9 +184,26 @@
     <button onclick="openFullscreen('https://gamesuperhot.github.io/play/moto-x3m-2.html')">Motox3m</button>
     <button onclick="openFullscreen('https://orteil.dashnet.org/cookieclicker/')">Cookie Clicker</button>
     <button onclick="openFullscreen('https://use.bsfa.info/')">Proxy</button>
+    <button onclick="showAddGameForm()">Add Your Own Game</button> <!-- Added the button -->
+  </div>
+
+  <div id="addGameModal" class="modal">
+    <span class="close-btn" onclick="closeAddGameForm()">&times;</span>
+    <div class="settings-box">
+      <h2>Add Your Own Game</h2>
+      <label for="gameName">Game Name:</label>
+      <input type="text" id="gameName" placeholder="Enter game name"><br>
+
+      <label for="gameURL">Game URL:</label>
+      <input type="url" id="gameURL" placeholder="Enter game URL"><br>
+
+      <button onclick="addGame()">Add Game</button>
+      <button onclick="closeAddGameForm()">Cancel</button>
+    </div>
   </div>
 
   <button onclick="openSettings()">Settings</button>
+  <button onclick="openCalculator()">Calculator</button>
 
   <div id="fullscreenModal" class="modal">
     <span class="close-btn" onclick="closeFullscreen()">&times;</span>
@@ -194,10 +236,24 @@
     </div>
   </div>
 
-  <div id="gameAdder" style="text-align: center; margin-top: 40px;">
-    <input type="text" id="customGameName" placeholder="Game Name">
-    <input type="url" id="customGameURL" placeholder="https://moodygames.com">
-    <button onclick="addCustomGame()">Add</button>
+  <div id="calcModal" class="modal">
+    <span class="close-btn" onclick="closeCalculator()">&times;</span>
+    <div class="calculator">
+      <input type="text" id="calcInput" placeholder="Enter expression">
+      <div>
+        <button onclick="insertCalc('+')">+</button>
+        <button onclick="insertCalc('-')">−</button>
+        <button onclick="insertCalc('×')">×</button>
+        <button onclick="insertCalc('÷')">÷</button>
+      </div>
+      <div>
+        <button onclick="insertCalc('sqrt(')">sqrt(</button>
+        <button onclick="insertCalc('^')">^</button>
+        <button onclick="calculate()">=</button>
+        <button onclick="clearCalc()">C</button>
+      </div>
+      <p id="calcResult">Result: </p>
+    </div>
   </div>
 
   <div class="ticker-container">
@@ -212,40 +268,60 @@
     </div>
   </div>
 
-  <div id="gameTimer">
-    <p>Time Played: <span id="timerDisplay">00:00</span></p>
-  </div>
-
   <audio id="clickSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
 
   <script>
-    let startTime = Date.now();
-    let timerInterval;
-
-    function updateTimer() {
-      const elapsed = Date.now() - startTime;
-      const seconds = Math.floor(elapsed / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const displaySeconds = seconds % 60;
-      document.getElementById("timerDisplay").innerText = `${String(minutes).padStart(2, '0')}:${String(displaySeconds).padStart(2, '0')}`;
+    function insertCalc(value) {
+      document.getElementById("calcInput").value += value;
     }
 
-    function startTimer() {
-      if (!timerInterval) {
-        startTime = Date.now() - (parseInt(localStorage.getItem('timer')) || 0);
-        timerInterval = setInterval(updateTimer, 1000);
+    function calculate() {
+      const input = document.getElementById("calcInput").value.trim();
+      try {
+        let expression = input
+          .replace(/sqrt\(/gi, "Math.sqrt(")
+          .replace(/\^/g, "**")
+          .replace(/×/g, "*")
+          .replace(/÷/g, "/");
+        const result = eval(expression);
+        document.getElementById("calcResult").innerText = "Result: " + result;
+      } catch (err) {
+        document.getElementById("calcResult").innerText = "Error!";
       }
     }
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        clearInterval(timerInterval);
-        localStorage.setItem("timer", Date.now() - startTime);
-        timerInterval = null;
-      } else {
-        startTimer();
+    function clearCalc() {
+      document.getElementById("calcInput").value = "";
+      document.getElementById("calcResult").innerText = "Result: ";
+    }
+
+    function openCalculator() {
+      document.getElementById("calcModal").style.display = "block";
+    }
+
+    function closeCalculator() {
+      document.getElementById("calcModal").style.display = "none";
+    }
+
+    function showAddGameForm() {
+      document.getElementById("addGameModal").style.display = "block";
+    }
+
+    function closeAddGameForm() {
+      document.getElementById("addGameModal").style.display = "none";
+    }
+
+    function addGame() {
+      const gameName = document.getElementById("gameName").value;
+      const gameURL = document.getElementById("gameURL").value;
+      if (gameName && gameURL) {
+        const gameButton = document.createElement("button");
+        gameButton.innerText = gameName;
+        gameButton.onclick = () => openFullscreen(gameURL);
+        document.getElementById("gameButtons").appendChild(gameButton);
+        closeAddGameForm();
       }
-    });
+    }
 
     function openFullscreen(url) {
       document.getElementById("gameIframe").src = url;
@@ -270,39 +346,11 @@
       document.body.style.backgroundColor = document.getElementById("bgColor").value;
       document.querySelectorAll("button").forEach(btn => btn.style.backgroundColor = document.getElementById("btnColor").value);
       document.getElementById("mainText").innerText = document.getElementById("customGreeting").value;
-
-      const showTicker = document.getElementById("showTicker").checked;
-      document.querySelector(".ticker-container").style.display = showTicker ? "block" : "none";
     }
 
     function restoreDefaults() {
       location.reload();
     }
-
-    function addCustomGame() {
-      const name = document.getElementById("customGameName").value.trim();
-      const url = document.getElementById("customGameURL").value.trim();
-      if (name && url) {
-        const btn = document.createElement("button");
-        btn.innerText = name;
-        btn.onclick = () => openFullscreen(url);
-        document.getElementById("gameButtons").appendChild(btn);
-      }
-    }
-
-    document.addEventListener("click", function (e) {
-      if (e.target.tagName === "BUTTON") {
-        const sound = document.getElementById("clickSound");
-        sound.currentTime = 0;
-        sound.play();
-      }
-    });
-
-    window.onload = () => {
-      const showTicker = localStorage.getItem('showTicker');
-      if (showTicker === "false") document.querySelector(".ticker-container").style.display = "none";
-      startTimer();
-    };
   </script>
 </body>
 </html>
